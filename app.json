@@ -8,6 +8,14 @@
     "scheme": "unwatch",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "extra": {
+      "FIREBASE_API_KEY": "AIzaSyClNIq71n2GOUbY7tQNUm6kFNeFl5BfO9M",
+      "FIREBASE_AUTH_DOMAIN": "unwatch-479207.firebaseapp.com",
+      "FIREBASE_PROJECT_ID": "unwatch-479207",
+      "FIREBASE_STORAGE_BUCKET": "unwatch-479207.firebasestorage.app",
+      "FIREBASE_MESSAGING_SENDER_ID": "127526946808",
+      "FIREBASE_APP_ID": "1:127526946808:web:f7c1404b3b1bd67591380d"
+    },
     "ios": {
       "supportsTablet": true
     },

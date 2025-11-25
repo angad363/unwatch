@@ -47,7 +47,11 @@ export type FocusSessionPayload = {
   startTime: Date | string;
   endTime: Date | string;
   blockType?: string;
+  mood?: number; // e.g., 1-5 or use emoji codes
+  status?: "in-progress" | "paused" | "completed" | "stopped";
+  breakMinutes?: number; // minutes of break taken
 };
+
 
 export type BlockPayload = {
   title: string;
@@ -71,30 +75,52 @@ export const addBlock = (uid: string, block: BlockPayload) =>
     createdAt: serverTimestamp(),
   });
 
-export const getUserStats = async (uid: string) => {
-  const snapshot = await getDocs(
-    query(collection(db, "users", uid, "focusSessions"), orderBy("startTime", "desc"))
-  );
+  export const getUserStats = async (uid: string) => {
+    const snapshot = await getDocs(
+      query(collection(db, "users", uid, "focusSessions"), orderBy("startTime", "desc"))
+    );
 
-  let totalMinutes = 0;
-  const culpritMap = new Map<string, number>();
+    let totalMinutes = 0;
+    let totalBreakMinutes = 0;
+    let moodSum = 0;
+    let moodCount = 0;
+    const statusCounts: Record<string, number> = {};
+    const culpritMap = new Map<string, number>();
 
-  snapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    const minutes = diffInMinutes(data.startTime, data.endTime);
-    totalMinutes += minutes;
-    if (data.blockType) {
-      culpritMap.set(data.blockType, (culpritMap.get(data.blockType) ?? 0) + minutes);
-    }
-  });
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      const minutes = diffInMinutes(data.startTime, data.endTime);
+      totalMinutes += minutes;
 
-  const culprits = Array.from(culpritMap.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([name]) => name);
+      if (data.blockType) {
+        culpritMap.set(data.blockType, (culpritMap.get(data.blockType) ?? 0) + minutes);
+      }
 
-  return { totalMinutes, culprits, sessionCount: snapshot.size };
-};
+      // Track break minutes
+      if (data.breakMinutes) {
+        totalBreakMinutes += data.breakMinutes;
+      }
+
+      // Track mood
+      if (data.mood !== undefined) {
+        moodSum += data.mood;
+        moodCount += 1;
+      }
+
+      // Track session status
+      const status = data.status || "unknown";
+      statusCounts[status] = (statusCounts[status] ?? 0) + 1;
+    });
+
+    const topCategories = Array.from(culpritMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([name]) => name);
+
+  return { totalMinutes, topCategories, sessionCount: snapshot.size };
+
+
+  };
 
 const normalizeTimestamp = (value: Date | string) =>
   value instanceof Date ? Timestamp.fromDate(value) : Timestamp.fromDate(new Date(value));

@@ -5,7 +5,7 @@ import { TopBar } from "@/components/TopBar";
 import { useThemePalette } from "@/components/theme-provider";
 import { addBlock, addFocusSession, auth } from "@/firebase/firebase";
 import { useUserStats } from "@/hooks/useUserStats";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -15,6 +15,33 @@ import {
   Text,
   View,
 } from "react-native";
+
+const [activeSession, setActiveSession] = useState<{
+  id: string;
+  title: string;
+  description?: string;
+  startTime: Date;
+  endTime: Date;
+} | null>(null);
+
+const [timerSeconds, setTimerSeconds] = useState(0);
+
+
+useEffect(() => {
+  if (!activeSession) return;
+
+  const interval = setInterval(() => {
+    const now = new Date();
+    const remaining = Math.max(
+      0,
+      Math.floor((activeSession.endTime.getTime() - now.getTime()) / 1000)
+    );
+    setTimerSeconds(remaining);
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [activeSession]);
+
 
 const suggestedBlocks: SuggestedBlock[] = [
   {
@@ -134,6 +161,20 @@ export default function HomeScreen() {
       >
         <TopBar streak={stats.streak || 0} />
 
+        {activeSession && (
+          <View style={[styles.activeSessionCard, { backgroundColor: theme.surface }]}>
+            <Text style={{ color: theme.textPrimary, fontSize: 18, fontWeight: '700' }}>
+              {activeSession.title}
+            </Text>
+            {activeSession.description && (
+              <Text style={{ color: theme.textSecondary }}>{activeSession.description}</Text>
+            )}
+            <Text style={{ color: theme.textPrimary, marginTop: 8 }}>
+              {Math.floor(timerSeconds / 60)}m {timerSeconds % 60}s remaining
+            </Text>
+          </View>
+        )}
+
         <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.cardHeader}>
             <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Hourly Focus</Text>
@@ -248,5 +289,15 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontSize: 12,
   },
+  activeSessionCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginVertical: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 4,
+  }
 });
 
